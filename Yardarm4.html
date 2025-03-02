@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shipshape</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBp4LaK9zwQeXS2jCtL8v2KwZ37WN1E1Tk&libraries=places&callback=initMap" async defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    header img {
+      height: 50px;
+      margin-right: 10px;
+    }
+
+    header h1 {
+      margin: 0;
+    }
+
+    #result {
+      text-align: center;
+      font-size: 36px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 20px;
+      padding: 20px;
+    }
+
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="shlogo.png" alt="Shipshape">
+    <h1>Shipshape</h1>
+  </header>
+  <div id="result">Detecting your location...</div>
+  <div id="map"></div>
+
+  <button onclick="findPubUsingCurrentLocation()">Find Nearest Pub with the Sun Over the Yardarm</button>
+
+  <script>
+    let map;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 0, lng: 0 },
+        zoom: 15,
+      });
+    }
+
+    function findPubUsingCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            const now = new Date();
+            const sunPosition = SunCalc.getPosition(now, latitude, longitude);
+            const altitude = sunPosition.altitude * (180 / Math.PI); // Convert radians to degrees
+
+            if (altitude > 25) { // Updated threshold to 25 degrees
+              document.getElementById("result").textContent =
+                "The sun is over the yardarm! Searching for a nearby pub...";
+              fetchNearestPub(latitude, longitude);
+            } else {
+              document.getElementById("result").textContent =
+                "The sun is not over the yardarm in your location.";
+            }
+          },
+          () => {
+            document.getElementById("result").textContent = "Unable to retrieve your location.";
+          }
+        );
+      } else {
+        document.getElementById("result").textContent = "Geolocation is not supported by your browser.";
+      }
+    }
+
+    function fetchNearestPub(latitude, longitude) {
+      const location = new google.maps.LatLng(latitude, longitude);
+      const request = {
+        location: location,
+        radius: 2000,
+        type: ["bar"],
+      };
+
+      const service = new google.maps.places.PlacesService(map);
+      service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+          const nearestPub = results[0];
+          const pubName = nearestPub.name;
+          const pubAddress = nearestPub.vicinity;
+
+          document.getElementById("result").textContent = `The nearest pub is ${pubName}, located at ${pubAddress}.`;
+        } else {
+          document.getElementById("result").textContent = "No pubs were found nearby.";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
