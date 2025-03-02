@@ -49,7 +49,7 @@
 <body>
   <header>
     <img src="shlogo.png" alt="Shipshape">
-    <h1>Shipshape</h1>
+    <h1></h1>
   </header>
   <div id="result">Detecting your location...</div>
   <div id="map"></div>
@@ -67,11 +67,15 @@
     }
 
     function findPubUsingCurrentLocation() {
+      console.log("Requesting location..."); // Debug log
+
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
+
+            console.log(`Location received: Latitude ${latitude}, Longitude ${longitude}`); // Debug log
 
             const now = new Date();
             const sunPosition = SunCalc.getPosition(now, latitude, longitude);
@@ -86,12 +90,32 @@
                 "The sun is not over the yardarm in your location.";
             }
           },
-          () => {
-            document.getElementById("result").textContent = "Unable to retrieve your location.";
-          }
+          (error) => {
+            handleGeolocationError(error);
+          },
+          { enableHighAccuracy: true } // Request high accuracy for better results
         );
       } else {
         document.getElementById("result").textContent = "Geolocation is not supported by your browser.";
+      }
+    }
+
+    function handleGeolocationError(error) {
+      console.error(`Geolocation error: ${error.message}`); // Debug log
+
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          document.getElementById("result").textContent = "Location access was denied. Please enable it in your browser settings.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          document.getElementById("result").textContent = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          document.getElementById("result").textContent = "The request to get your location timed out.";
+          break;
+        default:
+          document.getElementById("result").textContent = "An unknown error occurred while retrieving your location.";
+          break;
       }
     }
 
